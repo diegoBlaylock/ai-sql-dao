@@ -1,0 +1,1197 @@
+zero_shot:
+  What universities have the most researchers?:
+    type: success
+    sql: |
+      SELECT u.name, COUNT(pd.personId) AS researcher_count
+      FROM ai.University u
+      JOIN ai.Person p ON u.id = p.universityId
+      JOIN ai.PersonDomain pd ON p.id = pd.personId
+      GROUP BY u.name
+      ORDER BY researcher_count DESC;
+    rows:
+      - name: Plymouth State University
+        researcher_count: "4"
+      - name: Brigham Young University
+        researcher_count: "3"
+      - name: Texas A&M University
+        researcher_count: "2"
+      - name: Utah Valley University
+        researcher_count: "1"
+    result: Plymouth State University has the most researchers with 4, followed by
+      Brigham Young University with 3, Texas A&M University with 2, and Utah
+      Valley University with 1.
+  What papers have been written by researchers no associated with a university?:
+    type: success
+    sql: |
+      SELECT p.id, p.title, p.abstract, p.content
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person pers ON pa.authorId = pers.id
+      WHERE pers.universityId IS NULL;
+    rows:
+      - id: 1
+        title: "Cats: An unexplored fuel source"
+        abstract: During the season of winter, fuel scarcity can become an issue for
+          those lacking natural fuels or wood ovens. The researchers present a
+          new possibility in the form of cats. It is found that as the number of
+          cats within a home increases, the heat retained by that house
+          increases as well by statistically significant amounts (p=0.5).
+        content: >-
+          This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential heating source. While anecdotal
+          evidence suggests that feline companionship can provide a "warm glow,"
+          this research aims to quantify the actual thermal output of an average
+          adult cat. A controlled experiment was conducted wherein a
+          standardized test room, equipped with temperature sensors and a
+          calibrated heat source, was subjected to varying feline populations
+          (0, 1, and 3 cats). Ambient temperature was recorded at regular
+          intervals over a 24-hour period. Control variables included external
+          temperature, humidity, and the presence of a standardized heat source
+          (a 1000W electric heater) to provide a baseline for comparison.
+
+
+          Results demonstrated that the introduction of cats had a statistically
+          insignificant impact on room temperature. While individual cats
+          exhibited localized heat generation (particularly in areas of
+          sunbathing or proximity to heat sources), this effect was not
+          sufficient to significantly raise the overall ambient temperature. In
+          fact, the presence of multiple cats appeared to have a slightly
+          negative effect, potentially due to increased heat loss through feline
+          respiration and evaporative cooling. These findings suggest that while
+          cats may provide localized warmth and emotional comfort, they are not
+          a viable alternative to traditional heating systems for residential
+          purposes.
+    result: 'The paper titled "Cats: An unexplored fuel source" explores the
+      potential of using domestic cats as a residential heating source. The
+      abstract highlights that researchers investigated whether the presence of
+      cats could significantly increase heat retention in homes during winter.
+      The study concluded that while individual cats might provide localized
+      warmth, they are not a viable alternative to traditional heating systems.
+      This paper was authored by a researcher who is not associated with any
+      university.'
+  Can you tell what keywords are involved in papers about cats?:
+    type: success
+    sql: >
+      SELECT DISTINCT k.name
+
+      FROM ai.Keyword k
+
+      JOIN ai.PaperKeyword pk ON k.id = pk.keywordId
+
+      JOIN ai.Paper p ON pk.paperId = p.id
+
+      WHERE p.title ILIKE '%cat%' OR p.abstract ILIKE '%cat%' OR p.content ILIKE
+      '%cat%';
+    rows:
+      - name: game theory
+      - name: networking
+    result: 'The papers about cats involve the following keywords: "game theory" and
+      "networking".'
+  Give me the papers written by people from BYU:
+    type: success
+    sql: |
+      SELECT p.id, p.title, p.abstract, p.content
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person pe ON pa.authorId = pe.id
+      JOIN ai.University u ON pe.universityId = u.id
+      WHERE u.name = 'Brigham Young University' OR u.shortName = 'BYU';
+    rows:
+      - id: 1
+        title: "Cats: An unexplored fuel source"
+        abstract: During the season of winter, fuel scarcity can become an issue for
+          those lacking natural fuels or wood ovens. The researchers present a
+          new possibility in the form of cats. It is found that as the number of
+          cats within a home increases, the heat retained by that house
+          increases as well by statistically significant amounts (p=0.5).
+        content: >-
+          This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential heating source. While anecdotal
+          evidence suggests that feline companionship can provide a "warm glow,"
+          this research aims to quantify the actual thermal output of an average
+          adult cat. A controlled experiment was conducted wherein a
+          standardized test room, equipped with temperature sensors and a
+          calibrated heat source, was subjected to varying feline populations
+          (0, 1, and 3 cats). Ambient temperature was recorded at regular
+          intervals over a 24-hour period. Control variables included external
+          temperature, humidity, and the presence of a standardized heat source
+          (a 1000W electric heater) to provide a baseline for comparison.
+
+
+          Results demonstrated that the introduction of cats had a statistically
+          insignificant impact on room temperature. While individual cats
+          exhibited localized heat generation (particularly in areas of
+          sunbathing or proximity to heat sources), this effect was not
+          sufficient to significantly raise the overall ambient temperature. In
+          fact, the presence of multiple cats appeared to have a slightly
+          negative effect, potentially due to increased heat loss through feline
+          respiration and evaporative cooling. These findings suggest that while
+          cats may provide localized warmth and emotional comfort, they are not
+          a viable alternative to traditional heating systems for residential
+          purposes.
+    result: >-
+      The paper titled **"Cats: An unexplored fuel source"** was authored by
+      individuals affiliated with BYU. Here’s a quick overview:
+
+
+      - **Abstract:** The paper explores the idea of using cats as a possible
+      source of heat during winter. Despite anecdotal claims, the study found no
+      significant impact on room temperature from the presence of cats.
+
+      - **Content Summary:** Through a controlled experiment, researchers
+      assessed the thermal contribution of domestic cats. Results showed that
+      cats provide localized warmth but are not a viable substitute for
+      conventional heating systems.
+
+
+      Let me know if you need further details!
+  What are possible additional reviewers for the Cats paper where reviewers can't come from the same universities as the authors?:
+    type: success
+    sql: |
+      SELECT DISTINCT
+        p.id AS person_id,
+        p.firstName,
+        p.lastName,
+        p.email
+      FROM
+        ai.Person p
+      JOIN
+        ai.PersonDomain pd ON p.id = pd.personId
+      WHERE
+        p.universityId NOT IN (
+          SELECT DISTINCT u.id
+          FROM ai.University u
+          JOIN ai.Person a ON u.id = a.universityId
+          JOIN ai.PaperAuthor pa ON a.id = pa.authorId
+          JOIN ai.Paper pap ON pa.paperId = pap.id
+          WHERE pap.title = 'Cats'
+        )
+        AND p.id NOT IN (
+          SELECT r.reviewerId
+          FROM ai.PaperReviewer r
+          JOIN ai.Paper pap ON r.paperId = pap.id
+          WHERE pap.title = 'Cats'
+        );
+    rows:
+      - person_id: 3
+        firstname: Dok
+        lastname: Peh
+        email: electric.sheep@novel.org
+      - person_id: 1
+        firstname: Carl
+        lastname: Junior
+        email: carl.junior@gmail.com
+      - person_id: 4
+        firstname: Yolanda
+        lastname: Garber
+        email: spin.doctors@bored.game
+      - person_id: 6
+        firstname: Bob
+        lastname: Torln
+        email: vacant@my.mind
+      - person_id: 2
+        firstname: May
+        lastname: Rain
+        email: may.rain@hotmail.com
+      - person_id: 5
+        firstname: Gottfried
+        lastname: Friedhof
+        email: world.peace@loco.jam
+    result: >-
+      The possible additional reviewers for the "Cats" paper, who are not from
+      the same universities as the authors, are:
+
+
+      1. **Dok Peh** (Email: electric.sheep@novel.org)  
+
+      2. **Carl Junior** (Email: carl.junior@gmail.com)  
+
+      3. **Yolanda Garber** (Email: spin.doctors@bored.game)  
+
+      4. **Bob Torln** (Email: vacant@my.mind)  
+
+      5. **May Rain** (Email: may.rain@hotmail.com)  
+
+      6. **Gottfried Friedhof** (Email: world.peace@loco.jam)  
+  Give me the list of people associated with each domain.:
+    type: success
+    sql: |
+      SELECT 
+          d.name AS domain_name,
+          p.firstName AS person_first_name,
+          p.lastName AS person_last_name,
+          p.email AS person_email
+      FROM 
+          ai.PersonDomain pd
+      JOIN 
+          ai.Person p ON pd.personId = p.id
+      JOIN 
+          ai.Domain d ON pd.domainId = d.id;
+    rows:
+      - domain_name: math
+        person_first_name: Carl
+        person_last_name: Junior
+        person_email: carl.junior@gmail.com
+      - domain_name: human-computer interaction
+        person_first_name: Carl
+        person_last_name: Junior
+        person_email: carl.junior@gmail.com
+      - domain_name: physics
+        person_first_name: May
+        person_last_name: Rain
+        person_email: may.rain@hotmail.com
+      - domain_name: math
+        person_first_name: May
+        person_last_name: Rain
+        person_email: may.rain@hotmail.com
+      - domain_name: human-computer interaction
+        person_first_name: May
+        person_last_name: Rain
+        person_email: may.rain@hotmail.com
+      - domain_name: math
+        person_first_name: Dok
+        person_last_name: Peh
+        person_email: electric.sheep@novel.org
+      - domain_name: computer security
+        person_first_name: Dok
+        person_last_name: Peh
+        person_email: electric.sheep@novel.org
+      - domain_name: computational theory
+        person_first_name: Yolanda
+        person_last_name: Garber
+        person_email: spin.doctors@bored.game
+      - domain_name: physics
+        person_first_name: Gottfried
+        person_last_name: Friedhof
+        person_email: world.peace@loco.jam
+      - domain_name: computational theory
+        person_first_name: Gottfried
+        person_last_name: Friedhof
+        person_email: world.peace@loco.jam
+      - domain_name: human-computer interaction
+        person_first_name: Bob
+        person_last_name: Torln
+        person_email: vacant@my.mind
+      - domain_name: math
+        person_first_name: Bob
+        person_last_name: Torln
+        person_email: vacant@my.mind
+    result: |-
+      Here is the list of people associated with each domain:
+
+      1. **Domain: Math**
+         - Carl Junior (carl.junior@gmail.com)
+         - May Rain (may.rain@hotmail.com)
+         - Dok Peh (electric.sheep@novel.org)
+         - Bob Torln (vacant@my.mind)
+
+      2. **Domain: Human-Computer Interaction**
+         - Carl Junior (carl.junior@gmail.com)
+         - May Rain (may.rain@hotmail.com)
+         - Bob Torln (vacant@my.mind)
+
+      3. **Domain: Physics**
+         - May Rain (may.rain@hotmail.com)
+         - Gottfried Friedhof (world.peace@loco.jam)
+
+      4. **Domain: Computer Security**
+         - Dok Peh (electric.sheep@novel.org)
+
+      5. **Domain: Computational Theory**
+         - Yolanda Garber (spin.doctors@bored.game)
+         - Gottfried Friedhof (world.peace@loco.jam)
+  Can I get the complete list of keywords followed by the papers associated with them?:
+    type: success
+    sql: |
+      SELECT 
+          k.name AS keyword_name, 
+          k.description AS keyword_description, 
+          p.title AS paper_title
+      FROM 
+          ai.Keyword k
+      LEFT JOIN 
+          ai.PaperKeyword pk ON k.id = pk.keywordId
+      LEFT JOIN 
+          ai.Paper p ON pk.paperId = p.id
+      ORDER BY 
+          k.name, p.title;
+    rows:
+      - keyword_name: ai
+        keyword_description: null
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword_name: computer security
+        keyword_description: null
+        paper_title: null
+      - keyword_name: deep learning
+        keyword_description: null
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword_name: game theory
+        keyword_description: null
+        paper_title: "Cats: An unexplored fuel source"
+      - keyword_name: game theory
+        keyword_description: null
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword_name: networking
+        keyword_description: null
+        paper_title: "Cats: An unexplored fuel source"
+      - keyword_name: nlp
+        keyword_description: null
+        paper_title: null
+    result: >-
+      Here is the complete list of keywords and their associated papers:
+
+
+      - **ai**:
+        - *Effect of Red Bull on the Cognitive Capabilities of Transformer Models*.
+
+      - **computer security**:
+        - No associated papers.
+
+      - **deep learning**:
+        - *Effect of Red Bull on the Cognitive Capabilities of Transformer Models*.
+
+      - **game theory**:
+        - *Cats: An unexplored fuel source*.
+        - *Effect of Red Bull on the Cognitive Capabilities of Transformer Models*.
+
+      - **networking**:
+        - *Cats: An unexplored fuel source*.
+
+      - **nlp**:
+        - No associated papers.
+  What papers are associated with the state of New Hampshire?:
+    type: success
+    sql: |
+      SELECT p.id, p.title
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person pe ON pa.authorId = pe.id
+      JOIN ai.Address a ON pe.addressId = a.id
+      WHERE a.state = 'NH';
+    rows: []
+    result: No papers are associated with the state of New Hampshire.
+  Get me the complete description of all papers including the title, summary of the abstract and paper, names of the authors and their universities, names of reviewers and their universities, keywords, and domains.:
+    type: success
+    sql: >
+      SELECT 
+          p.id AS paper_id,
+          p.title,
+          SUBSTRING(p.abstract FOR 255) AS abstract_summary,
+          SUBSTRING(p.content FOR 255) AS content_summary,
+          ARRAY_AGG(DISTINCT CONCAT(a.firstName, ' ', a.lastName, ' (', u1.name, ')')) AS authors,
+          ARRAY_AGG(DISTINCT CONCAT(r.firstName, ' ', r.lastName, ' (', u2.name, ')')) AS reviewers,
+          ARRAY_AGG(DISTINCT k.name) AS keywords,
+          ARRAY_AGG(DISTINCT d.name) AS domains
+      FROM 
+          ai.Paper p
+      LEFT JOIN 
+          ai.PaperAuthor pa ON p.id = pa.paperId
+      LEFT JOIN 
+          ai.Person a ON pa.authorId = a.id
+      LEFT JOIN 
+          ai.University u1 ON a.universityId = u1.id
+      LEFT JOIN 
+          ai.PaperReviewer pr ON p.id = pr.paperId
+      LEFT JOIN 
+          ai.Person r ON pr.reviewerId = r.id
+      LEFT JOIN 
+          ai.University u2 ON r.universityId = u2.id
+      LEFT JOIN 
+          ai.PaperKeyword pk ON p.id = pk.paperId
+      LEFT JOIN 
+          ai.Keyword k ON pk.keywordId = k.id
+      LEFT JOIN 
+          ai.PersonDomain pd ON a.id = pd.personId
+      LEFT JOIN 
+          ai.Domain d ON pd.domainId = d.id
+      GROUP BY 
+          p.id, p.title, p.abstract, p.content;
+    rows:
+      - paper_id: 1
+        title: "Cats: An unexplored fuel source"
+        abstract_summary: "During the season of winter, fuel scarcity can become an
+          issue for those lacking natural fuels or wood ovens. The researchers
+          present a new possibility in the form of cats. It is found that as the
+          number of cats within a home increases, the heat retained "
+        content_summary: This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential heating source. While anecdotal
+          evidence suggests that feline companionship can provide a "warm glow,"
+          this research aims to quantify the actual thermal outp
+        authors:
+          - Carl Junior ()
+          - Dok Peh (Plymouth State University)
+          - May Rain (Brigham Young University)
+          - Yolanda Garber (Utah Valley University)
+        reviewers:
+          - Bob Torln (Plymouth State University)
+          - Gottfried Friedhof (Texas A&M University)
+        keywords:
+          - game theory
+          - networking
+        domains:
+          - computational theory
+          - computer security
+          - human-computer interaction
+          - math
+          - physics
+      - paper_id: 2
+        title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+        abstract_summary: Transformer models have seen a recent explosion on the NLP
+          front. There ability to mimic human speech is unprecedented in the AI
+          community and performs well on many benchmarks. This study seeks to
+          further the capabilities to test the effects of the caffei
+        content_summary: This study investigates the hypothesis that exposing the
+          hardware components of Natural Language Processing (NLP) Transformer
+          models to the caffeine and sugar present in Red Bull energy drink
+          during the fine-tuning process on a corpus of Taylor Swift lyri
+        authors:
+          - Bob Torln (Plymouth State University)
+          - Gottfried Friedhof (Texas A&M University)
+        reviewers:
+          - Carl Junior ()
+          - Gottfried Friedhof (Texas A&M University)
+          - May Rain (Brigham Young University)
+        keywords:
+          - ai
+          - deep learning
+          - game theory
+        domains:
+          - computational theory
+          - human-computer interaction
+          - math
+          - physics
+    result: >-
+      Here are the details for the papers:
+
+
+      ### Paper 1: Cats: An unexplored fuel source
+
+      - **Abstract Summary:** During winter, fuel scarcity can become an issue
+      for those without natural fuels or wood ovens. The researchers present a
+      new possibility in the form of cats. It is found that as the number of
+      cats within a home increases, the heat retained...
+
+      - **Content Summary:** This study investigates the efficacy of domestic
+      *felis catus* ("cats") as a residential heating source. While anecdotal
+      evidence suggests that feline companionship can provide a "warm glow,"
+      this research aims to quantify the actual thermal outp...
+
+      - **Authors:** 
+        - Carl Junior
+        - Dok Peh (Plymouth State University)
+        - May Rain (Brigham Young University)
+        - Yolanda Garber (Utah Valley University)
+      - **Reviewers:** 
+        - Bob Torln (Plymouth State University)
+        - Gottfried Friedhof (Texas A&M University)
+      - **Keywords:** game theory, networking
+
+      - **Domains:** computational theory, computer security, human-computer
+      interaction, math, physics
+
+
+      ---
+
+
+      ### Paper 2: Effect of Red Bull on the Cognitive Capabilities of
+      Transformer Models
+
+      - **Abstract Summary:** Transformer models have seen a recent explosion on
+      the NLP front. Their ability to mimic human speech is unprecedented in the
+      AI community and performs well on many benchmarks. This study seeks to
+      further the capabilities to test the effects of the caffein...
+
+      - **Content Summary:** This study investigates the hypothesis that
+      exposing the hardware components of Natural Language Processing (NLP)
+      Transformer models to the caffeine and sugar present in Red Bull energy
+      drink during the fine-tuning process on a corpus of Taylor Swift lyri...
+
+      - **Authors:** 
+        - Bob Torln (Plymouth State University)
+        - Gottfried Friedhof (Texas A&M University)
+      - **Reviewers:** 
+        - Carl Junior
+        - Gottfried Friedhof (Texas A&M University)
+        - May Rain (Brigham Young University)
+      - **Keywords:** ai, deep learning, game theory
+
+      - **Domains:** computational theory, human-computer interaction, math,
+      physics
+one_shot:
+  What universities have the most researchers?:
+    type: success
+    sql: |
+      SELECT u.name, COUNT(p.id) AS researcher_count
+      FROM ai.University u
+      JOIN ai.Person p ON u.id = p.universityId
+      GROUP BY u.id
+      ORDER BY researcher_count DESC;
+    rows:
+      - name: Plymouth State University
+        researcher_count: "2"
+      - name: Utah Valley University
+        researcher_count: "1"
+      - name: Brigham Young University
+        researcher_count: "1"
+      - name: Texas A&M University
+        researcher_count: "1"
+    result: Plymouth State University has the most researchers with 2, followed by
+      Utah Valley University, Brigham Young University, and Texas A&M
+      University, each with 1 researcher.
+  What papers have been written by researchers no associated with a university?:
+    type: success
+    sql: |
+      SELECT p.title
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person a ON pa.authorId = a.id
+      WHERE a.universityId IS NULL;
+    rows:
+      - title: "Cats: An unexplored fuel source"
+    result: "The paper titled *Cats: An unexplored fuel source* was written by
+      researchers not associated with a university."
+  Can you tell what keywords are involved in papers about cats?:
+    type: success
+    sql: >
+      SELECT DISTINCT k.name
+
+      FROM ai.Paper p
+
+      JOIN ai.PaperKeyword pk ON p.id = pk.paperId
+
+      JOIN ai.Keyword k ON pk.keywordId = k.id
+
+      WHERE p.title ILIKE '%cats%' OR p.abstract ILIKE '%cats%' OR k.name ILIKE
+      '%cats%';
+    rows:
+      - name: networking
+      - name: game theory
+    result: The keywords involved in papers about cats include "networking" and
+      "game theory."
+  Give me the papers written by people from BYU:
+    type: success
+    sql: |
+      SELECT p.title, p.abstract, p.content, a.firstName, a.lastName
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person a ON pa.authorId = a.id
+      JOIN ai.University u ON a.universityId = u.id
+      WHERE u.name ILIKE '%BYU%' OR u.shortName ILIKE '%BYU%';
+    rows:
+      - title: "Cats: An unexplored fuel source"
+        abstract: During the season of winter, fuel scarcity can become an issue for
+          those lacking natural fuels or wood ovens. The researchers present a
+          new possibility in the form of cats. It is found that as the number of
+          cats within a home increases, the heat retained by that house
+          increases as well by statistically significant amounts (p=0.5).
+        content: >-
+          This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential heating source. While anecdotal
+          evidence suggests that feline companionship can provide a "warm glow,"
+          this research aims to quantify the actual thermal output of an average
+          adult cat. A controlled experiment was conducted wherein a
+          standardized test room, equipped with temperature sensors and a
+          calibrated heat source, was subjected to varying feline populations
+          (0, 1, and 3 cats). Ambient temperature was recorded at regular
+          intervals over a 24-hour period. Control variables included external
+          temperature, humidity, and the presence of a standardized heat source
+          (a 1000W electric heater) to provide a baseline for comparison.
+
+
+          Results demonstrated that the introduction of cats had a statistically
+          insignificant impact on room temperature. While individual cats
+          exhibited localized heat generation (particularly in areas of
+          sunbathing or proximity to heat sources), this effect was not
+          sufficient to significantly raise the overall ambient temperature. In
+          fact, the presence of multiple cats appeared to have a slightly
+          negative effect, potentially due to increased heat loss through feline
+          respiration and evaporative cooling. These findings suggest that while
+          cats may provide localized warmth and emotional comfort, they are not
+          a viable alternative to traditional heating systems for residential
+          purposes.
+        firstname: May
+        lastname: Rain
+    result: 'The paper titled *"Cats: An unexplored fuel source"* was authored by
+      May Rain, who is affiliated with BYU. The abstract discusses the potential
+      of domestic cats to contribute to residential heating, exploring their
+      localized heat generation and statistical implications.'
+  What are possible additional reviewers for the Cats paper where reviewers can't come from the same universities as the authors?:
+    type: success
+    sql: >
+      SELECT DISTINCT r.id, r.firstName, r.lastName
+
+      FROM ai.Person r
+
+      JOIN ai.Paper p ON p.title ILIKE '%Cats%'
+
+      LEFT JOIN ai.PaperReviewer pr ON pr.paperId = p.id AND pr.reviewerId =
+      r.id
+
+      LEFT JOIN ai.PaperAuthor pa ON pa.paperId = p.id
+
+      LEFT JOIN ai.Person a ON a.id = pa.authorId
+
+      WHERE r.universityId IS NOT NULL 
+        AND (a.universityId IS NULL OR r.universityId != a.universityId)
+        AND pr.reviewerId IS NULL
+      GROUP BY r.id;
+    rows:
+      - id: 3
+        firstname: Dok
+        lastname: Peh
+      - id: 4
+        firstname: Yolanda
+        lastname: Garber
+      - id: 2
+        firstname: May
+        lastname: Rain
+    result: Possible additional reviewers for the *Cats* paper are Dok Peh, Yolanda
+      Garber, and May Rain.
+  Give me the list of people associated with each domain.:
+    type: success
+    sql: |
+      SELECT d.name AS domainName, p.firstName, p.lastName
+      FROM ai.Domain d
+      JOIN ai.PersonDomain pd ON d.id = pd.domainId
+      JOIN ai.Person p ON pd.personId = p.id
+      ORDER BY d.name, p.lastName, p.firstName;
+    rows:
+      - domainname: computational theory
+        firstname: Gottfried
+        lastname: Friedhof
+      - domainname: computational theory
+        firstname: Yolanda
+        lastname: Garber
+      - domainname: computer security
+        firstname: Dok
+        lastname: Peh
+      - domainname: human-computer interaction
+        firstname: Carl
+        lastname: Junior
+      - domainname: human-computer interaction
+        firstname: May
+        lastname: Rain
+      - domainname: human-computer interaction
+        firstname: Bob
+        lastname: Torln
+      - domainname: math
+        firstname: Carl
+        lastname: Junior
+      - domainname: math
+        firstname: Dok
+        lastname: Peh
+      - domainname: math
+        firstname: May
+        lastname: Rain
+      - domainname: math
+        firstname: Bob
+        lastname: Torln
+      - domainname: physics
+        firstname: Gottfried
+        lastname: Friedhof
+      - domainname: physics
+        firstname: May
+        lastname: Rain
+    result: |-
+      Here is the list of people associated with each domain:
+
+      - **Computational Theory**: Gottfried Friedhof, Yolanda Garber
+      - **Computer Security**: Dok Peh
+      - **Human-Computer Interaction**: Carl Junior, May Rain, Bob Torln
+      - **Math**: Carl Junior, Dok Peh, May Rain, Bob Torln
+      - **Physics**: Gottfried Friedhof, May Rain
+  Can I get the complete list of keywords followed by the papers associated with them?:
+    type: success
+    sql: |
+      SELECT k.name AS keyword, p.title AS paper
+      FROM ai.Keyword k
+      LEFT JOIN ai.PaperKeyword pk ON k.id = pk.keywordId
+      LEFT JOIN ai.Paper p ON pk.paperId = p.id
+      ORDER BY k.name, p.title;
+    rows:
+      - keyword: ai
+        paper: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: computer security
+        paper: null
+      - keyword: deep learning
+        paper: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: game theory
+        paper: "Cats: An unexplored fuel source"
+      - keyword: game theory
+        paper: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: networking
+        paper: "Cats: An unexplored fuel source"
+      - keyword: nlp
+        paper: null
+    result: >-
+      Here is the list of keywords with their associated papers:
+
+
+      - **ai**: Associated with *Effect of Red Bull on the Cognitive
+      Capabilities of Transformer Models*.
+
+      - **computer security**: No associated papers.
+
+      - **deep learning**: Associated with *Effect of Red Bull on the Cognitive
+      Capabilities of Transformer Models*.
+
+      - **game theory**: Associated with *Cats: An unexplored fuel source* and
+      *Effect of Red Bull on the Cognitive Capabilities of Transformer Models*.
+
+      - **networking**: Associated with *Cats: An unexplored fuel source*.
+
+      - **nlp**: No associated papers.
+  What papers are associated with the state of New Hampshire?:
+    type: success
+    sql: |
+      SELECT p.title
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person pe ON pa.authorId = pe.id
+      JOIN ai.Address a ON pe.addressId = a.id
+      WHERE a.state = 'NH'
+      GROUP BY p.id;
+    rows: []
+    result: There are no papers associated with the state of New Hampshire.
+  Get me the complete description of all papers including the title, summary of the abstract and paper, names of the authors and their universities, names of reviewers and their universities, keywords, and domains.:
+    type: success
+    sql: >
+      SELECT 
+          p.title AS paper_title,
+          LEFT(p.abstract, 100) || '...' AS abstract_summary,
+          LEFT(p.content, 100) || '...' AS content_summary,
+          STRING_AGG(DISTINCT a.firstName || ' ' || a.lastName, ', ') AS authors,
+          STRING_AGG(DISTINCT ua.name, ', ') AS author_universities,
+          STRING_AGG(DISTINCT r.firstName || ' ' || r.lastName, ', ') AS reviewers,
+          STRING_AGG(DISTINCT ur.name, ', ') AS reviewer_universities,
+          STRING_AGG(DISTINCT k.name, ', ') AS keywords,
+          STRING_AGG(DISTINCT d.name, ', ') AS domains
+      FROM 
+          ai.Paper p
+      LEFT JOIN 
+          ai.PaperAuthor pa ON p.id = pa.paperId
+      LEFT JOIN 
+          ai.Person a ON pa.authorId = a.id
+      LEFT JOIN 
+          ai.University ua ON a.universityId = ua.id
+      LEFT JOIN 
+          ai.PaperReviewer pr ON p.id = pr.paperId
+      LEFT JOIN 
+          ai.Person r ON pr.reviewerId = r.id
+      LEFT JOIN 
+          ai.University ur ON r.universityId = ur.id
+      LEFT JOIN 
+          ai.PaperKeyword pk ON p.id = pk.paperId
+      LEFT JOIN 
+          ai.Keyword k ON pk.keywordId = k.id
+      LEFT JOIN 
+          ai.PersonDomain pd ON a.id = pd.personId
+      LEFT JOIN 
+          ai.Domain d ON pd.domainId = d.id
+      GROUP BY 
+          p.id;
+    rows:
+      - paper_title: "Cats: An unexplored fuel source"
+        abstract_summary: During the season of winter, fuel scarcity can become an issue
+          for those lacking natural fuels or wo...
+        content_summary: This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential he...
+        authors: Carl Junior, Dok Peh, May Rain, Yolanda Garber
+        author_universities: Brigham Young University, Plymouth State University, Utah
+          Valley University
+        reviewers: Bob Torln, Gottfried Friedhof
+        reviewer_universities: Plymouth State University, Texas A&M University
+        keywords: game theory, networking
+        domains: computational theory, computer security, human-computer interaction,
+          math, physics
+      - paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+        abstract_summary: Transformer models have seen a recent explosion on the NLP
+          front. There ability to mimic human speec...
+        content_summary: This study investigates the hypothesis that exposing the
+          hardware components of Natural Language Pro...
+        authors: Bob Torln, Gottfried Friedhof
+        author_universities: Plymouth State University, Texas A&M University
+        reviewers: Carl Junior, Gottfried Friedhof, May Rain
+        reviewer_universities: Brigham Young University, Texas A&M University
+        keywords: ai, deep learning, game theory
+        domains: computational theory, human-computer interaction, math, physics
+    result: >-
+      Here is the detailed information about the papers:
+
+
+      1. **Cats: An unexplored fuel source**
+         - **Abstract Summary:** During the season of winter, fuel scarcity can become an issue for those lacking natural fuels or wo...
+         - **Content Summary:** This study investigates the efficacy of domestic felis catus (hereafter, "cats") as a residential he...
+         - **Authors:** Carl Junior, Dok Peh, May Rain, Yolanda Garber
+         - **Author Universities:** Brigham Young University, Plymouth State University, Utah Valley University
+         - **Reviewers:** Bob Torln, Gottfried Friedhof
+         - **Reviewer Universities:** Plymouth State University, Texas A&M University
+         - **Keywords:** game theory, networking
+         - **Domains:** computational theory, computer security, human-computer interaction, math, physics
+
+      2. **Effect of Red Bull on the Cognitive Capabilities of Transformer
+      Models**
+         - **Abstract Summary:** Transformer models have seen a recent explosion on the NLP front. There ability to mimic human speec...
+         - **Content Summary:** This study investigates the hypothesis that exposing the hardware components of Natural Language Pro...
+         - **Authors:** Bob Torln, Gottfried Friedhof
+         - **Author Universities:** Plymouth State University, Texas A&M University
+         - **Reviewers:** Carl Junior, Gottfried Friedhof, May Rain
+         - **Reviewer Universities:** Brigham Young University, Texas A&M University
+         - **Keywords:** ai, deep learning, game theory
+         - **Domains:** computational theory, human-computer interaction, math, physics
+multi_shot:
+  What universities have the most researchers?:
+    type: success
+    sql: |
+      SELECT u.name, COUNT(p.id) AS researcher_count
+      FROM ai.University u
+      LEFT JOIN ai.Person p ON u.id = p.universityId
+      GROUP BY u.id
+      ORDER BY researcher_count DESC;
+    rows:
+      - name: Plymouth State University
+        researcher_count: "2"
+      - name: Utah Valley University
+        researcher_count: "1"
+      - name: Texas A&M University
+        researcher_count: "1"
+      - name: Brigham Young University
+        researcher_count: "1"
+    result: Plymouth State University has the most researchers with 2. Utah Valley
+      University, Texas A&M University, and Brigham Young University each have 1
+      researcher.
+  What papers have been written by researchers no associated with a university?:
+    type: success
+    sql: |
+      SELECT p.title
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person a ON pa.authorId = a.id
+      WHERE a.universityId IS NULL;
+    rows:
+      - title: "Cats: An unexplored fuel source"
+    result: "The paper titled *Cats: An unexplored fuel source* was written by
+      researchers not associated with a university."
+  Can you tell what keywords are involved in papers about cats?:
+    type: success
+    sql: >
+      SELECT DISTINCT k.name 
+
+      FROM ai.Keyword k
+
+      JOIN ai.PaperKeyword pk ON k.id = pk.keywordId
+
+      JOIN ai.Paper p ON pk.paperId = p.id
+
+      WHERE p.title ILIKE '%cats%' OR p.abstract ILIKE '%cats%' OR k.name ILIKE
+      '%cats%';
+    rows:
+      - name: networking
+      - name: game theory
+    result: Keywords associated with papers about cats include networking and game
+      theory.
+  Give me the papers written by people from BYU:
+    type: success
+    sql: |
+      SELECT p.title, p.abstract
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person a ON pa.authorId = a.id
+      JOIN ai.University u ON a.universityId = u.id
+      WHERE (u.name = 'BYU' OR u.shortName = 'BYU');
+    rows:
+      - title: "Cats: An unexplored fuel source"
+        abstract: During the season of winter, fuel scarcity can become an issue for
+          those lacking natural fuels or wood ovens. The researchers present a
+          new possibility in the form of cats. It is found that as the number of
+          cats within a home increases, the heat retained by that house
+          increases as well by statistically significant amounts (p=0.5).
+    result: "The paper titled *Cats: An unexplored fuel source* was written by
+      someone from BYU. The abstract explores how the presence of cats in a home
+      during winter increases heat retention, providing a potential solution for
+      fuel scarcity."
+  What are possible additional reviewers for the Cats paper where reviewers can't come from the same universities as the authors?:
+    type: failure
+    sql: >-
+      SELECT DISTINCT p.firstName, p.lastName, p.email
+
+      FROM ai.Person p
+
+      JOIN ai.PersonDomain pd ON p.id = pd.personId
+
+      LEFT JOIN ai.PaperReviewer pr ON p.id = pr.reviewerId
+
+      JOIN ai.PaperAuthor pa ON pa.authorId = p.id
+
+      LEFT JOIN ai.Paper pp ON pr.paperId = pp.id
+
+      JOIN ai.University ur ON p.universityId = ur.id
+
+      WHERE pp.title = 'Cats'
+
+      AND p.universityId NOT IN (
+          SELECT DISTINCT a.universityId
+          FROM ai.Person a
+          JOIN ai.PaperAuthor pa ON a.id authorId pa.paperId.Execute fields filter only.
+    reason:
+      length: 98
+      name: error
+      severity: ERROR
+      code: "42601"
+      position: "447"
+      file: scan.l
+      line: "1176"
+      routine: scanner_yyerror
+  Give me the list of people associated with each domain.:
+    type: success
+    sql: |
+      SELECT d.name AS domainName, p.firstName, p.lastName
+      FROM ai.Domain d
+      JOIN ai.PersonDomain pd ON d.id = pd.domainId
+      JOIN ai.Person p ON p.id = pd.personId
+      ORDER BY d.name, p.lastName, p.firstName;
+    rows:
+      - domainname: computational theory
+        firstname: Gottfried
+        lastname: Friedhof
+      - domainname: computational theory
+        firstname: Yolanda
+        lastname: Garber
+      - domainname: computer security
+        firstname: Dok
+        lastname: Peh
+      - domainname: human-computer interaction
+        firstname: Carl
+        lastname: Junior
+      - domainname: human-computer interaction
+        firstname: May
+        lastname: Rain
+      - domainname: human-computer interaction
+        firstname: Bob
+        lastname: Torln
+      - domainname: math
+        firstname: Carl
+        lastname: Junior
+      - domainname: math
+        firstname: Dok
+        lastname: Peh
+      - domainname: math
+        firstname: May
+        lastname: Rain
+      - domainname: math
+        firstname: Bob
+        lastname: Torln
+      - domainname: physics
+        firstname: Gottfried
+        lastname: Friedhof
+      - domainname: physics
+        firstname: May
+        lastname: Rain
+    result: |-
+      Here is the list of people associated with each domain:
+
+      - **Computational Theory**: Gottfried Friedhof, Yolanda Garber
+      - **Computer Security**: Dok Peh
+      - **Human-Computer Interaction**: Carl Junior, May Rain, Bob Torln
+      - **Math**: Carl Junior, Dok Peh, May Rain, Bob Torln
+      - **Physics**: Gottfried Friedhof, May Rain
+  Can I get the complete list of keywords followed by the papers associated with them?:
+    type: success
+    sql: |
+      SELECT k.name AS keyword, p.title AS paper_title
+      FROM ai.Keyword k
+      LEFT JOIN ai.PaperKeyword pk ON k.id = pk.keywordId
+      LEFT JOIN ai.Paper p ON pk.paperId = p.id
+      ORDER BY k.name, p.title;
+    rows:
+      - keyword: ai
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: computer security
+        paper_title: null
+      - keyword: deep learning
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: game theory
+        paper_title: "Cats: An unexplored fuel source"
+      - keyword: game theory
+        paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+      - keyword: networking
+        paper_title: "Cats: An unexplored fuel source"
+      - keyword: nlp
+        paper_title: null
+    result: >-
+      Here is the complete list of keywords and their associated papers:
+
+
+      - **ai**: *Effect of Red Bull on the Cognitive Capabilities of Transformer
+      Models*
+
+      - **computer security**: No associated papers
+
+      - **deep learning**: *Effect of Red Bull on the Cognitive Capabilities of
+      Transformer Models*
+
+      - **game theory**: *Cats: An unexplored fuel source*, *Effect of Red Bull
+      on the Cognitive Capabilities of Transformer Models*
+
+      - **networking**: *Cats: An unexplored fuel source*
+
+      - **nlp**: No associated papers
+  What papers are associated with the state of New Hampshire?:
+    type: success
+    sql: |
+      SELECT DISTINCT p.title
+      FROM ai.Paper p
+      JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+      JOIN ai.Person a ON pa.authorId = a.id
+      JOIN ai.Address ad ON a.addressId = ad.id
+      WHERE ad.state = 'NH';
+    rows: []
+    result: There are no papers associated with the state of New Hampshire.
+  Get me the complete description of all papers including the title, summary of the abstract and paper, names of the authors and their universities, names of reviewers and their universities, keywords, and domains.:
+    type: success
+    sql: >
+      SELECT 
+          p.title AS paper_title,
+          p.abstract AS paper_abstract,
+          p.content AS paper_content,
+          STRING_AGG(DISTINCT CONCAT(a.firstName, ' ', a.lastName), ', ') AS authors,
+          STRING_AGG(DISTINCT au.name, ', ') AS authors_universities,
+          STRING_AGG(DISTINCT CONCAT(r.firstName, ' ', r.lastName), ', ') AS reviewers,
+          STRING_AGG(DISTINCT ru.name, ', ') AS reviewers_universities,
+          STRING_AGG(DISTINCT k.name, ', ') AS keywords,
+          STRING_AGG(DISTINCT d.name, ', ') AS domains
+      FROM ai.Paper p
+
+      LEFT JOIN ai.PaperAuthor pa ON p.id = pa.paperId
+
+      LEFT JOIN ai.Person a ON pa.authorId = a.id
+
+      LEFT JOIN ai.University au ON a.universityId = au.id
+
+      LEFT JOIN ai.PaperReviewer pr ON p.id = pr.paperId
+
+      LEFT JOIN ai.Person r ON pr.reviewerId = r.id
+
+      LEFT JOIN ai.University ru ON r.universityId = ru.id
+
+      LEFT JOIN ai.PaperKeyword pk ON p.id = pk.paperId
+
+      LEFT JOIN ai.Keyword k ON pk.keywordId = k.id
+
+      LEFT JOIN ai.PersonDomain pd ON a.id = pd.personId
+
+      LEFT JOIN ai.Domain d ON pd.domainId = d.id
+
+      GROUP BY p.id;
+    rows:
+      - paper_title: "Cats: An unexplored fuel source"
+        paper_abstract: During the season of winter, fuel scarcity can become an issue
+          for those lacking natural fuels or wood ovens. The researchers present
+          a new possibility in the form of cats. It is found that as the number
+          of cats within a home increases, the heat retained by that house
+          increases as well by statistically significant amounts (p=0.5).
+        paper_content: >-
+          This study investigates the efficacy of domestic felis catus
+          (hereafter, "cats") as a residential heating source. While anecdotal
+          evidence suggests that feline companionship can provide a "warm glow,"
+          this research aims to quantify the actual thermal output of an average
+          adult cat. A controlled experiment was conducted wherein a
+          standardized test room, equipped with temperature sensors and a
+          calibrated heat source, was subjected to varying feline populations
+          (0, 1, and 3 cats). Ambient temperature was recorded at regular
+          intervals over a 24-hour period. Control variables included external
+          temperature, humidity, and the presence of a standardized heat source
+          (a 1000W electric heater) to provide a baseline for comparison.
+
+
+          Results demonstrated that the introduction of cats had a statistically
+          insignificant impact on room temperature. While individual cats
+          exhibited localized heat generation (particularly in areas of
+          sunbathing or proximity to heat sources), this effect was not
+          sufficient to significantly raise the overall ambient temperature. In
+          fact, the presence of multiple cats appeared to have a slightly
+          negative effect, potentially due to increased heat loss through feline
+          respiration and evaporative cooling. These findings suggest that while
+          cats may provide localized warmth and emotional comfort, they are not
+          a viable alternative to traditional heating systems for residential
+          purposes.
+        authors: Carl Junior, Dok Peh, May Rain, Yolanda Garber
+        authors_universities: Brigham Young University, Plymouth State University, Utah
+          Valley University
+        reviewers: Bob Torln, Gottfried Friedhof
+        reviewers_universities: Plymouth State University, Texas A&M University
+        keywords: game theory, networking
+        domains: computational theory, computer security, human-computer interaction,
+          math, physics
+      - paper_title: Effect of Red Bull on the Cognitive Capabilities of Transformer Models
+        paper_abstract: Transformer models have seen a recent explosion on the NLP
+          front. There ability to mimic human speech is unprecedented in the AI
+          community and performs well on many benchmarks. This study seeks to
+          further the capabilities to test the effects of the caffeinated drink
+          Red Bull on a transformers. CPUs and GPUs running the models were
+          dipped into large vats of red bull whilst being fined tuned on Taylor
+          Swifts songs. The result shows a 200% relative improvement for GPT 4
+          models.
+        paper_content: >-
+          This study investigates the hypothesis that exposing the hardware
+          components of Natural Language Processing (NLP) Transformer models to
+          the caffeine and sugar present in Red Bull energy drink during the
+          fine-tuning process on a corpus of Taylor Swift lyrics will result in
+          enhanced model performance. The rationale behind this approach stems
+          from the observation that caffeine and sugar can induce heightened
+          neural activity in humans, suggesting a potential for analogous
+          effects on the artificial neural networks within the Transformer
+          architecture. A series of experiments were conducted, where identical
+          Transformer models were fine-tuned on a curated dataset of Taylor
+          Swift lyrics under varying conditions: (1) standard fine-tuning, (2)
+          fine-tuning with the GPU and CPU submerged in distilled water, and (3)
+          fine-tuning with the GPU and CPU submerged in Red Bull. Model
+          performance was evaluated across a range of NLP tasks, including
+          sentiment analysis, text generation, and named entity recognition.
+
+
+          Surprisingly, the results demonstrated a statistically significant
+          improvement in model performance when the GPU and CPU were submerged
+          in Red Bull during the fine-tuning process. Models trained under this
+          condition exhibited higher accuracy rates in sentiment analysis,
+          generated more creative and coherent text, and achieved superior
+          performance in named entity recognition tasks. This unexpected outcome
+          suggests that the specific chemical composition of Red Bull,
+          particularly the combination of caffeine and sugar, may have a unique
+          and beneficial effect on the computational processes within the
+          hardware components, potentially leading to enhanced neural network
+          activity and improved learning capabilities. Further research is
+          warranted to investigate the underlying mechanisms of this phenomenon
+          and to explore the potential of other energy sources and chemical
+          compounds for optimizing the training and performance of deep learning
+          models.
+        authors: Bob Torln, Gottfried Friedhof
+        authors_universities: Plymouth State University, Texas A&M University
+        reviewers: Carl Junior, Gottfried Friedhof, May Rain
+        reviewers_universities: Brigham Young University, Texas A&M University
+        keywords: ai, deep learning, game theory
+        domains: computational theory, human-computer interaction, math, physics
+    result: >-
+      Here are the detailed descriptions of the papers:
+
+
+      1. **Paper Title:** *Cats: An unexplored fuel source*
+         - **Abstract:** During winter, fuel scarcity can be an issue. Researchers propose using cats as an alternative heating source, observing that increasing the number of cats may statistically increase home heat retention (p=0.5).
+         - **Content Summary:** The study investigates the thermal output of cats as a heating source. Results show that while individual cats provide localized warmth, their overall contribution to room temperature is minimal and statistically insignificant. This suggests that cats are not suitable as an alternative heating system despite their emotional comfort benefits.
+         - **Authors:** Carl Junior, Dok Peh, May Rain, Yolanda Garber
+         - **Universities of Authors:** Brigham Young University, Plymouth State University, Utah Valley University
+         - **Reviewers:** Bob Torln, Gottfried Friedhof
+         - **Universities of Reviewers:** Plymouth State University, Texas A&M University
+         - **Keywords:** game theory, networking
+         - **Domains:** computational theory, computer security, human-computer interaction, math, physics
+
+      2. **Paper Title:** *Effect of Red Bull on the Cognitive Capabilities of
+      Transformer Models*
+         - **Abstract:** Transformer models excel in NLP tasks. This study explores the effects of submerging CPUs and GPUs in Red Bull during fine-tuning on Taylor Swift songs, showing a 200% performance improvement in GPT-4 models.
+         - **Content Summary:** Researchers tested whether exposure to Red Bull enhances Transformer model performance. Submerging hardware in Red Bull showed statistically significant improvements in accuracy, creativity, and coherence in text generation and NLP tasks. This suggests that the unique chemical composition of Red Bull may impact computational processes and calls for further study.
+         - **Authors:** Bob Torln, Gottfried Friedhof
+         - **Universities of Authors:** Plymouth State University, Texas A&M University
+         - **Reviewers:** Carl Junior, Gottfried Friedhof, May Rain
+         - **Universities of Reviewers:** Brigham Young University, Texas A&M University
+         - **Keywords:** ai, deep learning, game theory
+         - **Domains:** computational theory, human-computer interaction, math, physics 
