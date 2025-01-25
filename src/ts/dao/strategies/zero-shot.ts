@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
-import type { Thread } from "../../openai/client.js";
 import { Strategy } from "./base.js";
 import { cleanSql } from "../../sql/utils.js";
+import type { Thread } from "../../openai/index.js";
 
 export class ZeroShotStrategy extends Strategy {
 	getIntroPrompt() {

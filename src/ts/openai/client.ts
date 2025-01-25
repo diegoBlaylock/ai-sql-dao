@@ -1,20 +1,18 @@
 import { OpenAI } from "openai";
-import process, { stdout } from "node:process";
-import { Writable } from "node:stream";
+import process from "node:process";
+import { Thread, type ThreadOpts } from "./thread.js";
 
 export class OpenAiClient {
 	#client: OpenAI;
-	#threadSpawner: (opts: ThreadOpts) => Thread;
 	#model: OpenAI.ChatModel;
 
 	constructor(model: OpenAI.ChatModel) {
 		this.#client = new OpenAI({ apiKey: process.env.OPENAI_KEY });
-		this.#threadSpawner = this.#getThreadSpawner();
 		this.#model = model;
 	}
 
 	startThread(opts: ThreadOpts = {}) {
-		return this.#threadSpawner(opts);
+		return new OpenAiClient.#Thread(this, opts);
 	}
 
 	#query(messages: OpenAI.ChatCompletionMessageParam[]) {
@@ -26,88 +24,27 @@ export class OpenAiClient {
 		} as OpenAI.ChatCompletionCreateParamsStreaming);
 	}
 
-	#getThreadSpawner(): (opts: ThreadOpts) => Thread {
-		const outer = this;
-		const custom = class extends Thread {
-			protected async query(
-				messages: OpenAI.ChatCompletionMessageParam[],
-			): Promise<string> {
-				const response = await outer.#query(messages);
+	static #Thread = class extends Thread {
+		#client: OpenAiClient;
+		constructor(client: OpenAiClient, opts: ThreadOpts) {
+			super(opts);
+			this.#client = client;
+		}
 
-				const acc = [];
-				for await (const part of response) {
-					const chunk =
-						part.choices[0].delta.content ??
-						part.choices[0].delta.refusal ??
-						"";
-					// stdout.write(chunk); // This is fun to see realtime output
-					acc.push(chunk);
-				}
+		protected async query(
+			messages: OpenAI.ChatCompletionMessageParam[],
+		): Promise<string> {
+			const response = await this.#client.#query(messages);
 
-				return acc.join("");
+			const acc = [];
+			for await (const part of response) {
+				const chunk =
+					part.choices[0].delta.content ?? part.choices[0].delta.refusal ?? "";
+				// stdout.write(chunk); // This is fun to see realtime output
+				acc.push(chunk);
 			}
-		};
 
-		return (opts) => new custom(opts);
-	}
-}
-
-export interface ThreadOpts {
-	trackResponses?: boolean;
-}
-
-export abstract class Thread {
-	protected opts: ThreadOpts;
-
-	#messages: OpenAI.ChatCompletionMessageParam[] = [];
-	constructor(opts: ThreadOpts) {
-		this.opts = opts;
-	}
-
-	writeD(text: string) {
-		this.#addMessage("developer", text);
-		return this;
-	}
-
-	writeU(text: string) {
-		this.#addMessage("user", text);
-		return this;
-	}
-
-	async submit(): Promise<string> {
-		return this.processResponse(await this.query(this.#messages));
-	}
-
-	queryU(text: string): Promise<string> {
-		this.writeU(text);
-		return this.submit();
-	}
-
-	getThread(): string {
-		return this.#messages
-			.map(
-				({ role, content }) =>
-					`${role}\n${"-".repeat(64)}\n${(content as string)
-						.split("\n")
-						.map((t) => `${" ".repeat(4)}${t}`)
-						.join("\n")}`,
-			)
-			.join("\n\n");
-	}
-
-	#addMessage(role: OpenAI.ChatCompletionMessageParam["role"], text: string) {
-		this.#messages.push({
-			role,
-			content: text,
-		} as OpenAI.ChatCompletionMessageParam);
-	}
-
-	processResponse(text: string): string {
-		if (this.opts.trackResponses ?? true) this.#addMessage("assistant", text);
-		return text;
-	}
-
-	protected abstract query(
-		messages: OpenAI.ChatCompletionMessageParam[],
-	): Promise<string>;
+			return acc.join("");
+		}
+	};
 }

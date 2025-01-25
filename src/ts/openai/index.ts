@@ -1,1 +1,2 @@
-export { OpenAiClient, type Thread, type ThreadOpts } from "./client.js";
+export { OpenAiClient } from "./client.js";
+export type { Thread, ThreadOpts } from "./thread.js";
