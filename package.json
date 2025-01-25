@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "openai": "^4.80.0",
+    "openai": "^4.80.1",
     "pg": "^8.13.1",
     "yaml": "^2.7.0"
   },
