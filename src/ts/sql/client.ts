@@ -5,11 +5,7 @@ export async function withSql<T = void>(
 	fn: (sql: SqlClient) => Promise<T> | T,
 ) {
 	const _client = new pg.Client({
-		host: "localhost",
-		port: 5432,
-		user: process.env.PG_USER,
-		password: process.env.PG_PSWD,
-		database: process.env.PG_DB,
+		connectionString: process.env.PG_CONNECTION_STRING,
 	});
 	await _client.connect();
 
