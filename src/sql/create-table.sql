@@ -5,7 +5,7 @@ CREATE SCHEMA ai;
 
 -- Entities
 
-CREATE TABLE ai.Address (
+CREATE TABLE ai.address (
   id SERIAL,
   street VARCHAR(64) NOT NULL,
   city VARCHAR(64) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE ai.Address (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE ai.Paper (
+CREATE TABLE ai.paper (
   id SERIAL,
   title VARCHAR(128) NOT NULL,
   abstract TEXT NOT NULL,
@@ -22,35 +22,35 @@ CREATE TABLE ai.Paper (
   PRIMARY KEY (id)
 );
 
-CREATE TYPE ai.LOCATION AS ENUM ('online', 'physical');
+CREATE TYPE ai.Location AS ENUM ('online', 'physical');
 
-CREATE TABLE ai.University (
+CREATE TABLE ai.university (
   id SERIAL,
   name VARCHAR(64) NOT NULL,
-  shortName VARCHAR(10),
-  addressId INT UNIQUE, -- Not null for the case of online university
-  type ai.LOCATION  NOT NULL,
+  short_name VARCHAR(10),
+  address_id INT UNIQUE, -- Not null for the case of online university
+  type ai.Location  NOT NULL,
   PRIMARY KEY(id),
-  FOREIGN KEY (addressId) REFERENCES ai.Address (id)
+  FOREIGN KEY (address_id) REFERENCES ai.address (id)
 );
-CREATE INDEX index_on_university_name ON ai.University (name);
+CREATE INDEX index_on_university_name ON ai.university (name);
 
-CREATE TABLE ai.Person (
+CREATE TABLE ai.person (
   id SERIAL,
-  firstName VARCHAR(64) NOT NULL,
-  lastName VARCHAR(64) NOT NULL,
+  first_name VARCHAR(64) NOT NULL,
+  last_name VARCHAR(64) NOT NULL,
   email VARCHAR(255) NOT NULL,
-  addressId INT NOT NULL,
-  universityId INT,
+  address_id INT NOT NULL,
+  university_id INT,
   PRIMARY KEY (id),
-  FOREIGN KEY (addressId) REFERENCES ai.Address (id),
-  FOREIGN KEY (universityId) REFERENCES ai.University (id),
+  FOREIGN KEY (address_id) REFERENCES ai.address (id),
+  FOREIGN KEY (university_id) REFERENCES ai.university (id),
   UNIQUE (email)
 );
 
-CREATE INDEX index_on_last_name ON ai.Person (lastName);
+CREATE INDEX index_on_last_name ON ai.person (last_name);
 
-CREATE TABLE ai.Keyword (
+CREATE TABLE ai.keyword (
   id SERIAL,
   name VARCHAR(32) NOT NULL,
   description VARCHAR(255),
@@ -58,7 +58,7 @@ CREATE TABLE ai.Keyword (
   UNIQUE (name)
 );
 
-CREATE TABLE ai.Domain (
+CREATE TABLE ai.domain (
   id SERIAL,
   name VARCHAR(64) NOT NULL,
   description VARCHAR(255),
@@ -67,36 +67,36 @@ CREATE TABLE ai.Domain (
 );
 
 -- Relationships
-CREATE TABLE ai.PaperAuthor(
-  paperId INT NOT NULL,
-  authorId INT NOT NULL,
-  PRIMARY KEY (paperId, authorId),
-  FOREIGN KEY (paperId) REFERENCES ai.Paper (id),
-  FOREIGN KEY (authorId) REFERENCES ai.Person(id)
+CREATE TABLE ai.paper_author(
+  paper_id INT NOT NULL,
+  author_id INT NOT NULL,
+  PRIMARY KEY (paper_id, author_id),
+  FOREIGN KEY (paper_id) REFERENCES ai.paper (id),
+  FOREIGN KEY (author_id) REFERENCES ai.person(id)
 );
 
-CREATE TABLE ai.PaperReviewer(
-  paperId INT NOT NULL,
-  reviewerId INT NOT NULL,
-  PRIMARY KEY (paperId, reviewerId),
-  FOREIGN KEY (paperId) REFERENCES ai.Paper (id),
-  FOREIGN KEY (reviewerId) REFERENCES ai.Person(id)
+CREATE TABLE ai.paper_reviewer(
+  paper_id INT NOT NULL,
+  reviewer_id INT NOT NULL,
+  PRIMARY KEY (paper_id, reviewer_id),
+  FOREIGN KEY (paper_id) REFERENCES ai.paper (id),
+  FOREIGN KEY (reviewer_id) REFERENCES ai.person(id)
 );
 
-CREATE TABLE ai.PaperKeyword(
-  paperId INT NOT NULL,
-  keywordId INT NOT NULL,
-  PRIMARY KEY (paperId, keywordId),
-  FOREIGN KEY (paperId) REFERENCES ai.Paper (id),
-  FOREIGN KEY (keywordId) REFERENCES ai.Keyword(id)
+CREATE TABLE ai.paper_keyword(
+  paper_id INT NOT NULL,
+  keyword_id INT NOT NULL,
+  PRIMARY KEY (paper_id, keyword_id),
+  FOREIGN KEY (paper_id) REFERENCES ai.paper (id),
+  FOREIGN KEY (keyword_id) REFERENCES ai.keyword(id)
 );
 
-CREATE TABLE ai.PersonDomain(
-  personId INT NOT NULL,
-  domainId INT NOT NULL,
-  PRIMARY KEY (personId, domainId),
-  FOREIGN KEY (personId) REFERENCES ai.Person (id),
-  FOREIGN KEY (domainId) REFERENCES ai.Domain(id)
+CREATE TABLE ai.person_domain(
+  person_id INT NOT NULL,
+  domain_id INT NOT NULL,
+  PRIMARY KEY (person_id, domain_id),
+  FOREIGN KEY (person_id) REFERENCES ai.person (id),
+  FOREIGN KEY (domain_id) REFERENCES ai.domain(id)
 );
 
 /*
